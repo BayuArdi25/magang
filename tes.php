@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Data Real-Time</title>
+  <title>MANCORE NUMFORE</title>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
   <style>
@@ -43,9 +43,38 @@
 
     #table_div {
       width: 100%;
-      max-width: 90vw; /* Maksimal 90% lebar viewport */
+      max-width: 98vw; /* Maksimal 90% lebar viewport */
       margin: 0 auto;
       overflow-x: auto; /* Jika terlalu besar, tabel bisa di-scroll */
+    }
+
+    /* Gaya tambahan untuk tabel */
+    .google-visualization-table-table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .google-visualization-table-th, 
+    .google-visualization-table-td {
+      padding: 8px 12px;
+      text-align: center; /* Tengah secara horizontal */
+      vertical-align: middle; /* Tengah secara vertikal */
+      white-space: nowrap; /* Pastikan konten tetap dalam satu baris */
+      border: 2px solid #999; /* Tambah ketebalan dan ubah warna garis batas */
+    }
+
+    .google-visualization-table-th {
+      background-color: #e0e0e0; /* Warna latar belakang header tabel */
+    }
+
+    /* Warna latar belakang alternatif untuk baris tabel */
+    .google-visualization-table-tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    /* Gaya hover untuk baris */
+    .google-visualization-table-tr:hover {
+      background-color: #f1f1f1;
     }
 
     /* Media Queries untuk perangkat dengan layar lebih kecil */
@@ -83,7 +112,7 @@
     var table; // Variabel untuk menyimpan objek tabel
 
     function drawTable() {
-      // Ganti dengan ID spreadsheet dan gid sheet FA
+      // Ganti dengan ID spreadsheet dan gid sheet yang sesuai
       var query = new google.visualization.Query('https://docs.google.com/spreadsheets/d/1kwiMaYyYbv5HCWcymuH13aPdNiZVuqJ92EEV3IEg7_s/gviz/tq?gid=690360252');
       
       // Kirim query untuk mengambil data
@@ -99,8 +128,6 @@
       // Simpan data yang diambil
       data = response.getDataTable();
 
-      // Log kolom untuk memeriksa apakah ODP_Nm ada
-      console.log("Nama Kolom:", data.getColumnLabel(0), data.getColumnLabel(1), data.getColumnLabel(2)); // Tambah log ini
       table = new google.visualization.Table(document.getElementById('table_div'));
       table.draw(data, {showRowNumber: true, width: '100%', height: '100%'});
     }
@@ -115,13 +142,9 @@
         filteredData.addColumn(data.getColumnType(i), data.getColumnLabel(i));
       }
 
-      // Log untuk melihat nilai pencarian
-      console.log("Mencari:", searchTerm);
-
       // Tambahkan baris yang sesuai dengan hasil pencarian
       for (var i = 0; i < data.getNumberOfRows(); i++) {
         var odpNm = data.getValue(i, data.getColumnIndex('ODP_Nm'));
-        console.log("ODP_Nm:", odpNm); // Log setiap nilai ODP_Nm
 
         // Cek apakah ODP_Nm mengandung kata kunci pencarian dan pastikan tidak null
         if (odpNm && odpNm.toLowerCase().includes(searchTerm)) {
@@ -140,7 +163,7 @@
   </script>
 </head>
 <body>
-  <h1>Data Real-Time</h1>
+  <h1>MANCORE NUMFORE</h1>
 
   <!-- Input Pencarian -->
   <label for="searchInput">Cari ODP_Nm:</label>
