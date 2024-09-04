@@ -7,48 +7,109 @@
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
   <style>
-    /* Gaya umum untuk memastikan ukuran teks responsif */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
+      padding: 20px;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 20px;
       background-color: #f0f0f0;
     }
 
     h1 {
-      font-size: 4vw; /* Sesuaikan ukuran berdasarkan lebar viewport */
+      font-size: 4vw;
       text-align: center;
       margin-bottom: 20px;
+      color: #333;
     }
 
     label {
-      font-size: 1.2em; /* Gunakan em agar ukuran font proporsional */
+      font-size: 1.2em;
       margin-right: 10px;
     }
 
-    input {
+    input[type="text"] {
       padding: 10px;
       font-size: 1em;
       width: 100%;
-      max-width: 400px; /* Batas maksimum lebar input */
-      box-sizing: border-box;
+      max-width: 400px;
       margin-bottom: 20px;
+      box-sizing: border-box;
+      border: 2px solid #ccc;
+      border-radius: 5px;
+    }
+
+    #columnToggles {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      gap: 10px;
+      margin-bottom: 20px;
+      font-size: 0.9em;
+      width: 100%;
+    }
+
+    .column-item {
+      display: flex;
+      align-items: center;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 8px 12px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+    }
+
+    .column-item:hover {
+      background-color: #f9f9f9;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .column-item input {
+      display: none;
+    }
+
+    .column-item label {
+      font-size: 0.9em;
+      color: #333;
+      margin: 0;
+    }
+
+    .column-item input + label::before {
+      content: '';
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+      border: 2px solid #666;
+      border-radius: 3px;
+      background-color: #fff;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .column-item input:checked + label::before {
+      background-color: #4CAF50;
+      border-color: #4CAF50;
+    }
+
+    .column-item input:checked + label::after {
+      content: '\2713';
+      font-size: 14px;
+      color: white;
+      position: absolute;
+      left: 4px;
+      top: 0;
     }
 
     #table_div {
       width: 100%;
-      max-width: 98vw; /* Maksimal 90% lebar viewport */
-      margin: 0 auto;
-      overflow-x: auto; /* Jika terlalu besar, tabel bisa di-scroll */
+      max-width: 98vw;
+      overflow-x: auto;
     }
 
-    /* Gaya tambahan untuk tabel */
     .google-visualization-table-table {
       border-collapse: collapse;
       width: 100%;
@@ -57,34 +118,38 @@
     .google-visualization-table-th, 
     .google-visualization-table-td {
       padding: 8px 12px;
-      text-align: center; /* Tengah secara horizontal */
-      vertical-align: middle; /* Tengah secara vertikal */
-      white-space: nowrap; /* Pastikan konten tetap dalam satu baris */
-      border: 2px solid #999; /* Tambah ketebalan dan ubah warna garis batas */
+      text-align: center;
+      border: 2px solid #999;
     }
 
     .google-visualization-table-th {
-      background-color: #e0e0e0; /* Warna latar belakang header tabel */
+      background-color: #e0e0e0;
     }
 
-    /* Warna latar belakang alternatif untuk baris tabel */
     .google-visualization-table-tr:nth-child(even) {
       background-color: #f9f9f9;
     }
 
-    /* Gaya hover untuk baris */
     .google-visualization-table-tr:hover {
       background-color: #f1f1f1;
     }
 
-    /* Media Queries untuk perangkat dengan layar lebih kecil */
     @media only screen and (max-width: 768px) {
       h1 {
         font-size: 6vw;
       }
 
-      label, input {
+      label, input[type="text"] {
         font-size: 1.1em;
+      }
+
+      .column-item {
+        padding: 6px 10px;
+      }
+
+      .column-item input + label::before {
+        width: 16px;
+        height: 16px;
       }
     }
 
@@ -93,29 +158,36 @@
         font-size: 8vw;
       }
 
-      label, input {
+      label, input[type="text"] {
         font-size: 1em;
       }
 
-      input {
-        width: 100%; /* Pada perangkat kecil, input akan memenuhi lebar layar */
+      input[type="text"] {
+        width: 100%;
+      }
+
+      .column-item {
+        padding: 5px 8px;
+      }
+
+      .column-item input + label::before {
+        width: 14px;
+        height: 14px;
       }
     }
   </style>
 
   <script type="text/javascript">
-    // Muat library Google Visualization API
     google.charts.load('current', {'packages':['table']});
     google.charts.setOnLoadCallback(drawTable);
 
-    var data;  // Variabel untuk menyimpan data agar bisa di-filter
-    var table; // Variabel untuk menyimpan objek tabel
+    var data;
+    var table;
+    var originalData;
+    var columnVisibility = {};
 
     function drawTable() {
-      // Ganti dengan ID spreadsheet dan gid sheet yang sesuai
       var query = new google.visualization.Query('https://docs.google.com/spreadsheets/d/1kwiMaYyYbv5HCWcymuH13aPdNiZVuqJ92EEV3IEg7_s/gviz/tq?gid=690360252');
-      
-      // Kirim query untuk mengambil data
       query.send(handleQueryResponse);
     }
 
@@ -125,55 +197,148 @@
         return;
       }
 
-      // Simpan data yang diambil
       data = response.getDataTable();
+      originalData = data.clone();
+      
+      // Panggil cleanHeaderODCNUMFA setelah data asli di-clone
+      cleanHeaderODCNUMFA(originalData);
 
-      // Bersihkan header dari kata "ODC-NUM-FA" saja
-      cleanHeaderODCNUMFA(data);
-
+      createColumnToggles();
       table = new google.visualization.Table(document.getElementById('table_div'));
-      table.draw(data, {showRowNumber: true, width: '100%', height: '100%'});
+      table.draw(originalData, {showRowNumber: true, width: '100%', height: '100%'});
     }
 
-    // Fungsi untuk membersihkan kata "ODC-NUM-FA" dari header kolom
     function cleanHeaderODCNUMFA(data) {
+      var columnsToRemove = [];
+
       for (var i = 0; i < data.getNumberOfColumns(); i++) {
         var columnLabel = data.getColumnLabel(i);
 
         if (columnLabel.includes('ODC-NUM-FA')) {
-          // Hapus hanya kata "ODC-NUM-FA", sisakan yang lainnya
-          var newLabel = columnLabel.replace('ODC-NUM-FA', '').trim();
-          data.setColumnLabel(i, newLabel);
+          columnLabel = columnLabel.replace('ODC-NUM-FA', '').trim();
+          data.setColumnLabel(i, columnLabel);
         }
+
+        // Tandai kolom dengan header kosong untuk dihapus
+        if (columnLabel === '') {
+          columnsToRemove.push(i);
+        }
+      }
+
+      // Hapus kolom yang ditandai, mulai dari kolom dengan indeks terbesar
+      for (var j = columnsToRemove.length - 1; j >= 0; j--) {
+        data.removeColumn(columnsToRemove[j]);
       }
     }
 
-    // Fungsi untuk melakukan pencarian
     function searchODP() {
-      var searchTerm = document.getElementById('searchInput').value.toLowerCase(); // Ambil nilai input pencarian
+      var searchTerm = document.getElementById('searchInput').value.toLowerCase();
       var filteredData = new google.visualization.DataTable();
 
-      // Buat struktur tabel baru dengan kolom yang sama
-      for (var i = 0; i < data.getNumberOfColumns(); i++) {
-        filteredData.addColumn(data.getColumnType(i), data.getColumnLabel(i));
+      for (var i = 0; i < originalData.getNumberOfColumns(); i++) {
+        filteredData.addColumn(originalData.getColumnType(i), originalData.getColumnLabel(i));
       }
 
-      // Tambahkan baris yang sesuai dengan hasil pencarian
-      for (var i = 0; i < data.getNumberOfRows(); i++) {
-        var odpNm = data.getValue(i, data.getColumnIndex('ODP_Nm'));
-
-        // Cek apakah ODP_Nm mengandung kata kunci pencarian dan pastikan tidak null
+      for (var i = 0; i < originalData.getNumberOfRows(); i++) {
+        var odpNm = originalData.getValue(i, originalData.getColumnIndex('ODP_Nm'));
         if (odpNm && odpNm.toLowerCase().includes(searchTerm)) {
-          // Ambil setiap nilai kolom di baris dan tambahkan ke tabel yang difilter
           var row = [];
-          for (var j = 0; j < data.getNumberOfColumns(); j++) {
-            row.push(data.getValue(i, j));
+          for (var j = 0; j < originalData.getNumberOfColumns(); j++) {
+            row.push(originalData.getValue(i, j));
           }
-          filteredData.addRow(row); // Tambahkan baris yang cocok ke tabel baru
+          filteredData.addRow(row);
         }
       }
 
-      // Tampilkan tabel yang sudah difilter
+      table.draw(filteredData, {showRowNumber: true, width: '100%', height: '100%'});
+    }
+
+    function createColumnToggles() {
+      var toggleDiv = document.getElementById('columnToggles');
+      toggleDiv.innerHTML = '';
+
+      var mainToggleDiv = document.createElement('div');
+      mainToggleDiv.classList.add('column-item');
+
+      var mainCheckbox = document.createElement('input');
+      mainCheckbox.type = 'checkbox';
+      mainCheckbox.id = 'mainToggle';
+      mainCheckbox.checked = true;
+      mainCheckbox.onchange = function() { 
+        toggleAllColumnCheckboxes();
+      };
+
+      var mainLabel = document.createElement('label');
+      mainLabel.htmlFor = 'mainToggle';
+      mainLabel.textContent = 'FILTER';
+
+      mainToggleDiv.appendChild(mainCheckbox);
+      mainToggleDiv.appendChild(mainLabel);
+      toggleDiv.appendChild(mainToggleDiv);
+
+      for (var i = 0; i < originalData.getNumberOfColumns(); i++) {
+        var columnLabel = originalData.getColumnLabel(i);
+
+        // Lewati pembuatan checkbox untuk kolom dengan header kosong
+        if (columnLabel === '') {
+          continue;
+        }
+
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = 'col_' + i;
+        checkbox.checked = true;
+        checkbox.onchange = function() { 
+          toggleColumnVisibility();
+        };
+
+        var label = document.createElement('label');
+        label.htmlFor = 'col_' + i;
+        label.textContent = columnLabel;
+
+        var div = document.createElement('div');
+        div.classList.add('column-item');
+        div.appendChild(checkbox);
+        div.appendChild(label);
+
+        toggleDiv.appendChild(div);
+
+        columnVisibility[i] = true;
+      }
+    }
+
+    function toggleAllColumnCheckboxes() {
+      var mainCheckbox = document.getElementById('mainToggle');
+      var allCheckboxes = document.querySelectorAll('#columnToggles .column-item input[type="checkbox"]:not(#mainToggle)');
+
+      allCheckboxes.forEach(function(checkbox) {
+        checkbox.parentElement.style.display = mainCheckbox.checked ? 'flex' : 'none';
+      });
+    }
+
+    function toggleColumnVisibility() {
+      var filteredData = new google.visualization.DataTable();
+
+      for (var i = 0; i < originalData.getNumberOfColumns(); i++) {
+        var checkbox = document.getElementById('col_' + i);
+        if (checkbox && checkbox.checked) {
+          filteredData.addColumn(originalData.getColumnType(i), originalData.getColumnLabel(i));
+          columnVisibility[i] = true;
+        } else {
+          columnVisibility[i] = false;
+        }
+      }
+
+      for (var i = 0; i < originalData.getNumberOfRows(); i++) {
+        var row = [];
+        for (var j = 0; j < originalData.getNumberOfColumns(); j++) {
+          if (columnVisibility[j]) {
+            row.push(originalData.getValue(i, j));
+          }
+        }
+        filteredData.addRow(row);
+      }
+
       table.draw(filteredData, {showRowNumber: true, width: '100%', height: '100%'});
     }
   </script>
@@ -181,11 +346,11 @@
 <body>
   <h1>MANCORE NUMFORE</h1>
 
-  <!-- Input Pencarian -->
   <label for="searchInput">Cari ODP_Nm:</label>
   <input type="text" id="searchInput" onkeyup="searchODP()" placeholder="Masukkan nama ODP...">
 
-  <!-- Div untuk menampilkan tabel -->
+  <div id="columnToggles"></div>
+
   <div id="table_div"></div>
 </body>
 </html>
