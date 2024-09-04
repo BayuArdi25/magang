@@ -128,8 +128,24 @@
       // Simpan data yang diambil
       data = response.getDataTable();
 
+      // Bersihkan header dari kata "ODC-NUM-FA" saja
+      cleanHeaderODCNUMFA(data);
+
       table = new google.visualization.Table(document.getElementById('table_div'));
       table.draw(data, {showRowNumber: true, width: '100%', height: '100%'});
+    }
+
+    // Fungsi untuk membersihkan kata "ODC-NUM-FA" dari header kolom
+    function cleanHeaderODCNUMFA(data) {
+      for (var i = 0; i < data.getNumberOfColumns(); i++) {
+        var columnLabel = data.getColumnLabel(i);
+
+        if (columnLabel.includes('ODC-NUM-FA')) {
+          // Hapus hanya kata "ODC-NUM-FA", sisakan yang lainnya
+          var newLabel = columnLabel.replace('ODC-NUM-FA', '').trim();
+          data.setColumnLabel(i, newLabel);
+        }
+      }
     }
 
     // Fungsi untuk melakukan pencarian
