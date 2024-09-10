@@ -7,6 +7,7 @@
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 
   <style>
+    /* Style dasar */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -30,7 +31,7 @@
       margin-right: 10px;
     }
 
-    input[type="text"] {
+    input[type="text"], select {
       padding: 10px;
       font-size: 1em;
       width: 100%;
@@ -68,46 +69,11 @@
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
 
-    .column-item input {
-      display: none;
-    }
-
-    .column-item label {
-      font-size: 0.9em;
-      color: #333;
-      margin: 0;
-    }
-
-    .column-item input + label::before {
-      content: '';
-      display: inline-block;
-      width: 18px;
-      height: 18px;
-      margin-right: 10px;
-      border: 2px solid #666;
-      border-radius: 3px;
-      background-color: #fff;
-      transition: background-color 0.3s ease, border-color 0.3s ease;
-    }
-
-    .column-item input:checked + label::before {
-      background-color: #4CAF50;
-      border-color: #4CAF50;
-    }
-
-    .column-item input:checked + label::after {
-      content: '\2713';
-      font-size: 14px;
-      color: white;
-      position: absolute;
-      left: 4px;
-      top: 0;
-    }
-
     #table_div {
       width: 100%;
       max-width: 98vw;
       overflow-x: auto;
+      display: none; /* Tabel disembunyikan pada awalnya */
     }
 
     .google-visualization-table-table {
@@ -134,12 +100,13 @@
       background-color: #f1f1f1;
     }
 
+    /* Responsivitas */
     @media only screen and (max-width: 768px) {
       h1 {
         font-size: 6vw;
       }
 
-      label, input[type="text"] {
+      label, input[type="text"], select {
         font-size: 1.1em;
       }
 
@@ -147,9 +114,9 @@
         padding: 6px 10px;
       }
 
-      .column-item input + label::before {
-        width: 16px;
-        height: 16px;
+      .google-visualization-table-th, 
+      .google-visualization-table-td {
+        padding: 6px 8px;
       }
     }
 
@@ -158,11 +125,11 @@
         font-size: 8vw;
       }
 
-      label, input[type="text"] {
+      label, input[type="text"], select {
         font-size: 1em;
       }
 
-      input[type="text"] {
+      input[type="text"], select {
         width: 100%;
       }
 
@@ -170,9 +137,9 @@
         padding: 5px 8px;
       }
 
-      .column-item input + label::before {
-        width: 14px;
-        height: 14px;
+      .google-visualization-table-th, 
+      .google-visualization-table-td {
+        padding: 5px 6px;
       }
     }
   </style>
@@ -199,40 +166,49 @@
 
       data = response.getDataTable();
       originalData = data.clone();
-      
-      // Panggil cleanHeaderODCNUMFA setelah data asli di-clone
-      cleanHeaderODCNUMFA(originalData);
 
+      cleanHeaderODCNUMFA(originalData);
+      populateCombobox();
       createColumnToggles();
+
       table = new google.visualization.Table(document.getElementById('table_div'));
-      table.draw(originalData, {showRowNumber: true, width: '100%', height: '100%'});
+      // Tidak menggambar tabel saat ini
     }
 
     function cleanHeaderODCNUMFA(data) {
       var columnsToRemove = [];
-
       for (var i = 0; i < data.getNumberOfColumns(); i++) {
         var columnLabel = data.getColumnLabel(i);
-
         if (columnLabel.includes('ODC-NUM-FA')) {
           columnLabel = columnLabel.replace('ODC-NUM-FA', '').trim();
           data.setColumnLabel(i, columnLabel);
         }
 
-        // Tandai kolom dengan header kosong untuk dihapus
         if (columnLabel === '') {
           columnsToRemove.push(i);
         }
       }
 
-      // Hapus kolom yang ditandai, mulai dari kolom dengan indeks terbesar
       for (var j = columnsToRemove.length - 1; j >= 0; j--) {
         data.removeColumn(columnsToRemove[j]);
       }
     }
 
+    function populateCombobox() {
+      var combobox = document.getElementById('searchColumn');
+      combobox.innerHTML = '';
+
+      for (var i = 0; i < originalData.getNumberOfColumns(); i++) {
+        var option = document.createElement('option');
+        option.value = i;
+        option.text = originalData.getColumnLabel(i);
+        combobox.appendChild(option);
+      }
+    }
+
     function searchODP() {
       var searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      var selectedColumnIndex = parseInt(document.getElementById('searchColumn').value);
       var filteredData = new google.visualization.DataTable();
 
       for (var i = 0; i < originalData.getNumberOfColumns(); i++) {
@@ -240,8 +216,8 @@
       }
 
       for (var i = 0; i < originalData.getNumberOfRows(); i++) {
-        var odpNm = originalData.getValue(i, originalData.getColumnIndex('ODP_Nm'));
-        if (odpNm && odpNm.toLowerCase().includes(searchTerm)) {
+        var cellValue = originalData.getValue(i, selectedColumnIndex);
+        if (cellValue && cellValue.toLowerCase().includes(searchTerm)) {
           var row = [];
           for (var j = 0; j < originalData.getNumberOfColumns(); j++) {
             row.push(originalData.getValue(i, j));
@@ -250,7 +226,13 @@
         }
       }
 
-      table.draw(filteredData, {showRowNumber: true, width: '100%', height: '100%'});
+      // Hanya tampilkan tabel jika ada hasil
+      if (filteredData.getNumberOfRows() > 0) {
+        document.getElementById('table_div').style.display = 'block';
+        table.draw(filteredData, {showRowNumber: true, width: '100%', height: '100%'});
+      } else {
+        document.getElementById('table_div').style.display = 'none';
+      }
     }
 
     function createColumnToggles() {
@@ -279,7 +261,6 @@
       for (var i = 0; i < originalData.getNumberOfColumns(); i++) {
         var columnLabel = originalData.getColumnLabel(i);
 
-        // Lewati pembuatan checkbox untuk kolom dengan header kosong
         if (columnLabel === '') {
           continue;
         }
@@ -346,8 +327,12 @@
 <body>
   <h1>MANCORE NUMFORE</h1>
 
-  <label for="searchInput">Cari ODP_Nm:</label>
-  <input type="text" id="searchInput" onkeyup="searchODP()" placeholder="Masukkan nama ODP...">
+  <!-- Tambahkan Combobox untuk memilih kolom -->
+  <label for="searchColumn">Kolom yang mau dicari:</label>
+  <select id="searchColumn"></select>
+
+  <label for="searchInput">Cari berdasarkan isi kolom:</label>
+  <input type="text" id="searchInput" onkeyup="searchODP()" placeholder="Masukkan kata kunci...">
 
   <div id="columnToggles"></div>
 
